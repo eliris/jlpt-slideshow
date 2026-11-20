@@ -1,12 +1,12 @@
 # JLPT Slideshow
 
-A lightweight, zero-dependency passive vocabulary slideshow for JLPT N5 - N1 designed to run fullscreen for passive studying while eating or doing something else.
+A lightweight, zero-dependency passive vocabulary slideshow for JLPT N5 - N1 designed to run fullscreen for passive studying while you're eating or doing something else.
 
 **Live Demo:** [https://eliris.github.io/jlpt-slideshow/](https://eliris.github.io/jlpt-slideshow/)
 
 ## Features
-- **Hands-Free Slideshow:** Configurable 5s - 20s intervals and auto-hiding the HUD/cursor after 3.5 seconds of inactivity.
-- **Multiple JLPT Level Filtering:** Mix and match JLPT N1 through N5 decks.
+- **Hands-Free Slideshow:** Configurable time intervals.
+- **Multiple JLPT Level Filtering:** Mix and match JLPT N1 through N5 decks (you can click on multiple levels to add/remove them).
 - **Kanji Breakdown & Furigana:** Displays individual kanji readings and meanings under each word. Furigana can also be resized. (`S` / `M` / `L`).
 - **Blur Mode:** Blur English definitions and translations (`M`) and hover to peek.
 - **Mostly Offline:** Boots instantly with built-in cards and fetches full community datasets in the background.
