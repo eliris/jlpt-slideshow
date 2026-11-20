@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JLPT Passive Ambient Slideshow</title>
+  <!-- Google Fonts for crisp Japanese & UI typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+            jp: ['"Noto Sans JP"', '"Hiragino Kaku Gothic ProN"', 'Meiryo', 'sans-serif'],
+          },
+          colors: {
+            void: '#0b0b0c',
+            surface: '#141416',
+            inkPrimary: '#ffffff',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    /* Custom transitions and utility styling */
+    * {
+      box-sizing: border-box;
+      border-radius: 0 !important;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background-color: #0b0b0c;
+      color: #ffffff;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Card transition animations */
+    .card-stage {
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .card-stage.fade-out {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+
+    /* Blur mode for active recall */
+    .blur-target {
+      transition: filter 0.3s ease, opacity 0.3s ease;
+    }
+
+    .blur-active .blur-target {
+      filter: blur(12px);
+      opacity: 0.35;
+      cursor: pointer;
+    }
+
+    .blur-active .blur-target:hover {
+      filter: blur(0px);
+      opacity: 1;
+    }
+
+    /* Auto-hiding HUD controls */
+    .hud-layer {
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    body.idle-cursor {
+      cursor: none;
+    }
+
+    body.idle-cursor .hud-layer {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    body.idle-cursor .hud-top {
+      transform: translateY(-8px);
+    }
+
+    body.idle-cursor .hud-bottom {
+      transform: translateY(8px);
+    }
+
+    /* Ruby furigana styling for sentences */
+    ruby {
+      ruby-align: center;
+    }
+    rt {
+      font-size: var(--rt-size, 0.55em);
+      color: #ffffff;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+    }
+
+    /* Custom subtle scrollbar if text ever overflows on tiny viewports */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+    }
+  </style>
+</head>
+<body class="bg-void text-white font-sans text-base min-h-screen w-screen flex flex-col justify-between relative selection:bg-white/20">
+
+  <!-- Top Sleek Progress Bar -->
+  <div class="fixed top-0 left-0 right-0 h-[2px] bg-white/10 z-50">
+    <div id="progressBar" class="h-full bg-white w-0 transition-none"></div>
+  </div>
+
+  <!-- Top Minimal Status / HUD Bar -->
+  <header class="hud-layer hud-top w-full px-6 py-5 sm:px-10 sm:py-6 flex items-center justify-between z-30 text-sm">
+    <div class="flex items-center gap-3">
+      <button id="infoBtn" title="About & Shortcuts (?)" class="px-2.5 py-0.5 bg-surface text-white hover:bg-white hover:text-void transition-colors font-mono">
+        ?
+      </button>
+      <span id="sourceBadge" class="px-2 py-0.5 bg-surface text-white">
+        Initializing...
+      </span>
+    </div>
+
+    <!-- Quick Keyboard Legend (Desktop) -->
+    <div class="hidden md:flex items-center gap-5 text-sm text-white">
+      <span><kbd class="px-1.5 py-0.5 bg-surface text-white font-mono">Space</kbd> Pause</span>
+      <span><kbd class="px-1.5 py-0.5 bg-surface text-white font-mono">←/→</kbd> Nav</span>
+      <span><kbd class="px-1.5 py-0.5 bg-surface text-white font-mono">M</kbd> Blur</span>
+      <span><kbd class="px-1.5 py-0.5 bg-surface text-white font-mono">F</kbd> Fullscreen</span>
+    </div>
+  </header>
+
+  <!-- Info / Help Overlay Modal -->
+  <div id="infoModal" class="hidden fixed inset-0 bg-void/90 z-50 flex items-center justify-center p-6">
+    <div class="bg-surface text-white w-full max-w-md p-6 sm:p-8 flex flex-col gap-5 text-sm">
+      <div class="flex items-center justify-between">
+        <span class="font-medium text-base text-white">JLPT Ambient Slideshow</span>
+        <button id="closeInfoBtn" class="px-2.5 py-1 bg-void text-white hover:bg-white hover:text-void transition-colors font-mono">
+          ESC
+        </button>
+      </div>
+      <p class="text-white leading-relaxed">
+        A hands-free passive vocabulary display for JLPT N5–N1. Cards advance automatically and the interface fades out after a few seconds of inactivity.
+      </p>
+      <div class="flex flex-col gap-2 bg-void p-4 text-white">
+        <div class="flex justify-between"><span>Play / Pause</span><kbd class="font-mono">Space</kbd></div>
+        <div class="flex justify-between"><span>Previous / Next</span><kbd class="font-mono">← / →</kbd></div>
+        <div class="flex justify-between"><span>Toggle Furigana</span><kbd class="font-mono">R</kbd></div>
+        <div class="flex justify-between"><span>Toggle Kanji Breakdown</span><kbd class="font-mono">K</kbd></div>
+        <div class="flex justify-between"><span>Blur Meanings</span><kbd class="font-mono">M</kbd></div>
+        <div class="flex justify-between"><span>Fullscreen</span><kbd class="font-mono">F</kbd></div>
+        <div class="flex justify-between"><span>Toggle Info</span><kbd class="font-mono">?</kbd></div>
+      </div>
+      <p class="text-white leading-relaxed">
+        Vocabulary &amp; sentences sourced from OpenJLPT / JMdict / Tatoeba; kanji readings &amp; meanings via kanjiapi.dev.
+      </p>
+      <div class="pt-1 flex items-center justify-between text-white">
+        <span>GitHub</span>
+        <a href="https://github.com/eliris" target="_blank" rel="noopener noreferrer" class="underline underline-offset-4 hover:bg-white hover:text-void px-1.5 py-0.5 transition-colors">
+          github.com/eliris
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Centered Flashcard Display -->
+  <main class="flex-1 flex items-center justify-center px-6 sm:px-12 md:px-20 py-4 z-10">
+    <div id="cardStage" class="card-stage w-full max-w-4xl flex flex-col items-center text-center">
+      
+      <!-- Top Level Tag & Counter -->
+      <div class="flex items-center gap-4 mb-6 sm:mb-8 text-sm">
+        <span id="cardLevel" class="px-2.5 py-0.5 font-semibold tracking-wider uppercase bg-surface text-white">
+          N1
+        </span>
+        <span id="cardCounter" class="font-mono text-white">
+          1 / 1
+        </span>
+      </div>
+
+      <!-- Furigana / Kana Reading -->
+      <div id="cardReading" class="font-jp text-lg sm:text-xl text-white font-normal tracking-widest mb-2 min-h-[1.5em]">
+        ...
+      </div>
+
+      <!-- Main Kanji / Expression -->
+      <h1 id="cardWord" class="font-jp text-5xl sm:text-7xl md:text-8xl font-medium text-white tracking-wide leading-tight mb-6 break-keep">
+        読み込み中
+      </h1>
+
+      <!-- English Meaning -->
+      <p id="cardMeaning" class="blur-target text-base sm:text-lg font-normal text-white max-w-2xl leading-relaxed mb-6">
+        Loading vocabulary deck...
+      </p>
+
+      <!-- Individual Kanji Breakdown Strip -->
+      <div id="kanjiBreakdown" class="hidden flex flex-wrap items-center justify-center gap-3 mb-8 px-3 max-w-3xl text-sm text-white">
+      </div>
+
+      <!-- Example Sentence Container -->
+      <div id="sentenceContainer" class="max-w-3xl flex flex-col items-center gap-2.5 pt-2">
+        <p id="sentenceJp" class="font-jp text-lg sm:text-xl text-white font-normal leading-relaxed tracking-wide">
+          ...
+        </p>
+        <p id="sentenceEn" class="blur-target text-base text-white font-normal leading-relaxed">
+          ...
+        </p>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Bottom Floating Control Bar -->
+  <footer class="hud-layer hud-bottom w-full px-4 py-5 sm:px-8 sm:py-6 flex justify-center z-30">
+    <div class="flex flex-wrap items-center justify-center gap-3 px-4 py-2 bg-surface max-w-full text-sm text-white">
+      
+      <!-- JLPT Level Multi-Select Buttons -->
+      <div class="flex items-center gap-1 pr-2" role="group" aria-label="JLPT Levels">
+        <button data-level="N1" class="level-btn px-2.5 py-1.5 text-sm font-medium transition-colors bg-white text-void">N1</button>
+        <button data-level="N2" class="level-btn px-2.5 py-1.5 text-sm font-normal transition-colors text-white hover:bg-white/15">N2</button>
+        <button data-level="N3" class="level-btn px-2.5 py-1.5 text-sm font-normal transition-colors text-white hover:bg-white/15">N3</button>
+        <button data-level="N4" class="level-btn px-2.5 py-1.5 text-sm font-normal transition-colors text-white hover:bg-white/15">N4</button>
+        <button data-level="N5" class="level-btn px-2.5 py-1.5 text-sm font-normal transition-colors text-white hover:bg-white/15">N5</button>
+      </div>
+
+      <!-- Playback Controls: Prev / Play-Pause / Next -->
+      <div class="flex items-center gap-1 pr-2">
+        <button id="prevBtn" title="Previous Word (Left Arrow)" class="p-2 text-white hover:bg-white/15 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        <button id="playPauseBtn" title="Play / Pause (Space)" class="p-2 bg-white/15 text-white hover:bg-white/25 transition-colors">
+          <!-- Pause Icon (default playing) -->
+          <svg id="pauseIcon" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <rect x="6" y="5" width="4" height="14" />
+            <rect x="14" y="5" width="4" height="14" />
+          </svg>
+          <!-- Play Icon (hidden when playing) -->
+          <svg id="playIcon" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </button>
+
+        <button id="nextBtn" title="Next Word (Right Arrow)" class="p-2 text-white hover:bg-white/15 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Timer Duration Selector -->
+      <div class="flex items-center gap-1 pr-2" role="group" aria-label="Slide Duration">
+        <button data-sec="5" class="dur-btn px-2 py-1.5 text-sm text-white hover:bg-white/15 transition-colors">5s</button>
+        <button data-sec="8" class="dur-btn px-2 py-1.5 text-sm text-white hover:bg-white/15 transition-colors">8s</button>
+        <button data-sec="10" class="dur-btn px-2 py-1.5 text-sm bg-white text-void font-medium transition-colors">10s</button>
+        <button data-sec="15" class="dur-btn px-2 py-1.5 text-sm text-white hover:bg-white/15 transition-colors">15s</button>
+        <button data-sec="20" class="dur-btn px-2 py-1.5 text-sm text-white hover:bg-white/15 transition-colors">20s</button>
+      </div>
+
+      <!-- Extra Toggles: Reading / Kanji Breakdown / Meaning Blur / Fullscreen -->
+      <div class="flex items-center gap-1">
+        <button id="toggleReadingBtn" title="Toggle Furigana Reading (R)" class="px-2.5 py-1.5 text-sm font-jp text-white bg-white/15 hover:bg-white/25 transition-colors">
+          かな
+        </button>
+
+        <button id="toggleKanjiBtn" title="Toggle Kanji Breakdown (K)" class="px-2.5 py-1.5 text-sm font-jp text-white bg-white/15 hover:bg-white/25 transition-colors">
+          漢字
+        </button>
+
+        <!-- Furigana Size Setting -->
+        <div class="flex items-center gap-0.5 px-1" role="group" aria-label="Furigana Size" title="Sentence Furigana Size">
+          <span class="text-sm text-white pr-1 select-none">ふり</span>
+          <button data-rtsize="0.48em" class="rt-btn px-1.5 py-1 text-sm text-white hover:bg-white/15 transition-colors">S</button>
+          <button data-rtsize="0.62em" class="rt-btn px-1.5 py-1 text-sm bg-white text-void font-medium transition-colors">M</button>
+          <button data-rtsize="0.78em" class="rt-btn px-1.5 py-1 text-sm text-white hover:bg-white/15 transition-colors">L</button>
+        </div>
+
+        <button id="toggleBlurBtn" title="Blur English Meaning (M)" class="p-2 text-white hover:bg-white/15 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+        </button>
+
+        <button id="fullscreenBtn" title="Toggle Fullscreen (F)" class="p-2 text-white hover:bg-white/15 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- Toast Notification (Replaces alert()) -->
+  <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 bg-surface text-sm text-white opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+    Notification
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * 1. BUILT-IN CURATED FALLBACK DATASET (N1 - N5)
+     * Ensures instant zero-latency boot and 100% offline/CORS-resilient operation.
+     * ============================================================================
+     */
+    const BUILTIN_VOCAB = [
+      // --- N1 ---
+      {
+        level: 'N1',
+        word: '一概に',
+        reading: 'いちがいに',
+        meaning: 'unconditionally; as a rule; sweeping generalization (with neg.)',
+        sentenceJp: '経験が浅いからといって、<ruby>一概<rt>いちがい</rt></ruby>に<ruby>能力<rt>のうりょく</rt></ruby>が<ruby>低<rt>ひく</rt></ruby>いとは<ruby>言<rt>い</rt></ruby>えない。',
+        sentenceEn: 'Just because someone lacks experience doesn’t mean you can categorically say their ability is low.'
+      },
+      {
+        level: 'N1',
+        word: '醍醐味',
+        reading: 'だいごみ',
+        meaning: 'the real thrill; the true charm; the quintessence',
+        sentenceJp: '<ruby>試行錯誤<rt>しこうさくご</rt></ruby>しながら<ruby>作品<rt>さくひん</rt></ruby>を<ruby>作<rt>つく</rt></ruby>り<ruby>上<rt>あ</rt></ruby>げることこそ、<ruby>開発<rt>かいはつ</rt></ruby>の<ruby>醍醐味<rt>だいごみ</rt></ruby>だ。',
+        sentenceEn: 'Building a creation through trial and error is the true thrill of development.'
+      },
+      {
+        level: 'N1',
+        word: '培う',
+        reading: 'つちかう',
+        meaning: 'to cultivate; to foster; to build up (experience, strength)',
+        sentenceJp: '<ruby>長年<rt>ながねん</rt></ruby>の<ruby>現場<rt>げんば</rt></ruby>で<ruby>培<rt>つちか</rt></ruby>った<ruby>知識<rt>ちしき</rt></ruby>と<ruby>勘<rt>かん</rt></ruby>が、<ruby>緊急時<rt>きんきゅうじ</rt></ruby>に<ruby>役立<rt>やくだ</rt></ruby>った。',
+        sentenceEn: 'The knowledge and intuition cultivated over many years in the field proved useful in an emergency.'
+      },
+      {
+        level: 'N1',
+        word: '齟齬',
+        reading: 'そご',
+        meaning: 'discrepancy; inconsistency; mismatch; failure to mesh',
+        sentenceJp: '<ruby>双方<rt>そうほう</rt></ruby>の<ruby>認識<rt>にんしき</rt></ruby>に<ruby>微妙<rt>びみょう</rt></ruby>な<ruby>齟齬<rt>そご</rt></ruby>が<ruby>生<rt>しょう</rt></ruby>じ、プロジェクトが<ruby>遅<rt>おく</rt></ruby>れた。',
+        sentenceEn: 'A subtle discrepancy arose in mutual understanding, delaying the project.'
+      },
+      {
+        level: 'N1',
+        word: '払拭する',
+        reading: 'ふっしょくする',
+        meaning: 'to wipe out; to dispel; to sweep away (doubts, fears)',
+        sentenceJp: '<ruby>彼<rt>かれ</rt></ruby>の<ruby>誠実<rt>せいじつ</rt></ruby>な<ruby>説明<rt>せつめい</rt></ruby>は、<ruby>住民<rt>じゅうみん</rt></ruby>の<ruby>不安<rt>ふあん</rt></ruby>を<ruby>見事<rt>みごと</rt></ruby>に<ruby>払拭<rt>ふっしょく</rt></ruby>した。',
+        sentenceEn: 'His sincere explanation cleanly dispelled the residents’ anxieties.'
+      },
+      {
+        level: 'N1',
+        word: '傍ら',
+        reading: 'かたわら',
+        meaning: 'beside; while; at the same time (doing something else)',
+        sentenceJp: '<ruby>彼女<rt>かのじょ</rt></ruby>は<ruby>会社<rt>かいしゃ</rt></ruby>で<ruby>働<rt>はたら</rt></ruby>く<ruby>傍<rt>かたわ</rt></ruby>ら、<ruby>夜間<rt>やかん</rt></ruby>の<ruby>大学院<rt>だいがくいん</rt></ruby>に<ruby>通<rt>かよ</rt></ruby>っている。',
+        sentenceEn: 'While working at a company, she attends graduate school at night.'
+      },
+      {
+        level: 'N1',
+        word: '潔い',
+        reading: 'いさぎよい',
+        meaning: 'graceful; sportsmanlike; gallant; resolute; admitting defeat cleanly',
+        sentenceJp: '<ruby>自分<rt>じぶん</rt></ruby>の<ruby>非<rt>ひ</rt></ruby>を<ruby>潔<rt>いさぎよ</rt></ruby>く<ruby>認<rt>みと</rt></ruby>める<ruby>態度<rt>たいど</rt></ruby>に、<ruby>周囲<rt>しゅうい</rt></ruby>は<ruby>好感<rt>こうかん</rt></ruby>を<ruby>抱<rt>いだ</rt></ruby>いた。',
+        sentenceEn: 'Those around him felt favorable toward his attitude of gracefully admitting his own fault.'
+      },
+      {
+        level: 'N1',
+        word: '頓挫する',
+        reading: 'とんざする',
+        meaning: 'to suffer a setback; to stall; to come to a standstill',
+        sentenceJp: '<ruby>資金<rt>しきん</rt></ruby><ruby>調達<rt>ちょうたつ</rt></ruby>が<ruby>難航<rt>なんこう</rt></ruby>し、<ruby>新<rt>あたら</rt></ruby>しい<ruby>事業<rt>じぎょう</rt></ruby><ruby>計画<rt>けいかく</rt></ruby>は<ruby>頓挫<rt>とんざ</rt></ruby>した。',
+        sentenceEn: 'Fundraising hit difficulties, and the new business plan stalled.'
+      },
+      {
+        level: 'N1',
+        word: '顕著',
+        reading: 'けんちょ',
+        meaning: 'remarkable; striking; conspicuous; prominent',
+        sentenceJp: 'ここ<ruby>数年<rt>すうねん</rt></ruby>で、リモートワークを<ruby>導入<rt>どうにゅう</rt></ruby>する<ruby>企業<rt>きぎょう</rt></ruby>の<ruby>増加<rt>ぞうか</rt></ruby>が<ruby>顕著<rt>けんちょ</rt></ruby>だ。',
+        sentenceEn: 'In recent years, the increase in companies adopting remote work has been remarkable.'
+      },
+      {
+        level: 'N1',
+        word: '網羅する',
+        reading: 'もうらする',
+        meaning: 'to encompass; to cover exhaustively; to include comprehensively',
+        sentenceJp: 'この<ruby>辞典<rt>じてん</rt></ruby>は、<ruby>専門用語<rt>せんもんようご</rt></ruby>から<ruby>日常語<rt>にちじょうご</rt></ruby>まで<ruby>幅広<rt>はばひろ</rt></ruby>く<ruby>網羅<rt>もうら</rt></ruby>している。',
+        sentenceEn: 'This dictionary comprehensively covers everything from technical terms to everyday words.'
+      },
+      {
+        level: 'N1',
+        word: '醸し出す',
+        reading: 'かもしだす',
+        meaning: 'to create (an atmosphere/mood); to exude; to engender',
+        sentenceJp: '<ruby>古<rt>ふる</rt></ruby>い<ruby>木造<rt>もくぞう</rt></ruby>の<ruby>喫茶店<rt>きっさてん</rt></ruby>は、<ruby>落<rt>お</rt></ruby>ち<ruby>着<rt>つ</rt></ruby>いた<ruby>雰囲気<rt>ふんいき</rt></ruby>を<ruby>醸<rt>かも</rt></ruby>し<ruby>出<rt>だ</rt></ruby>している。',
+        sentenceEn: 'The old wooden coffee shop exudes a calm, relaxing atmosphere.'
+      },
+      {
+        level: 'N1',
+        word: '翻弄される',
+        reading: 'ほんろうされる',
+        meaning: 'to be tossed about; to be at the mercy of',
+        sentenceJp: '<ruby>急激<rt>きゅうげき</rt></ruby>な<ruby>為替<rt>かわせ</rt></ruby>の<ruby>変動<rt>へんどう</rt></ruby>に、<ruby>多<rt>おお</rt></ruby>くの<ruby>輸出<rt>ゆしゅつ</rt></ruby><ruby>企業<rt>きぎょう</rt></ruby>が<ruby>翻弄<rt>ほんろう</rt></ruby>された。',
+        sentenceEn: 'Many export companies were tossed about at the mercy of rapid exchange rate fluctuations.'
+      },
+      {
+        level: 'N1',
+        word: '佇まい',
+        reading: 'たたずまい',
+        meaning: 'appearance; air; atmosphere; bearing (of a person or building)',
+        sentenceJp: '<ruby>霧<rt>きり</rt></ruby>の<ruby>中<rt>なか</rt></ruby>に浮かぶ<ruby>神社<rt>じんじゃ</rt></ruby>の<ruby>静<rt>しず</rt></ruby>かな<ruby>佇<rt>たたず</rt></ruby>まいに<ruby>心<rt>こころ</rt></ruby>を<ruby>奪<rt>うば</rt></ruby>われた。',
+        sentenceEn: 'I was captivated by the quiet appearance of the shrine floating in the mist.'
+      },
+      {
+        level: 'N1',
+        word: '凌駕する',
+        reading: 'りょうがする',
+        meaning: 'to surpass; to outdo; to eclipse; to excel',
+        sentenceJp: '<ruby>新人<rt>しんじん</rt></ruby>の<ruby>演技<rt>えんぎ</rt></ruby>は、<ruby>ベテラン<rt>べてらん</rt></ruby><ruby>俳優<rt>はいゆう</rt></ruby>を<ruby>凌駕<rt>りょうが</rt></ruby>するほどの<ruby>迫力<rt>はくりょく</rt></ruby>があった。',
+        sentenceEn: 'The newcomer’s acting had an intensity that surpassed even veteran actors.'
+      },
+      {
+        level: 'N1',
+        word: '手前味噌',
+        reading: 'てまえみそ',
+        meaning: 'singing one’s own praises; self-praise; blowing one’s own horn',
+        sentenceJp: '<ruby>手前味噌<rt>てまえみそ</rt></ruby>になりますが、<ruby>今回<rt>こんかい</rt></ruby>の<ruby>企画<rt>きかく</rt></ruby>は<ruby>非常<rt>ひじょう</rt></ruby>に<ruby>好評<rt>こうひょう</rt></ruby>をいただいております。',
+        sentenceEn: 'It may sound like self-praise, but this latest project has been very well received.'
+      },
+
+      // --- N2 ---
+      {
+        level: 'N2',
+        word: '把握する',
+        reading: 'はあくする',
+        meaning: 'to grasp; to catch; to understand thoroughly',
+        sentenceJp: '<ruby>現状<rt>げんじょう</rt></ruby>の<ruby>問題点<rt>もんだいてん</rt></ruby>を<ruby>正確<rt>せいかく</rt></ruby>に<ruby>把握<rt>はあく</rt></ruby>することが<ruby>解決<rt>かいけつ</rt></ruby>への<ruby>第一歩<rt>だいいっぽ</rt></ruby>だ。',
+        sentenceEn: 'Accurately grasping the current issues is the first step toward a solution.'
+      },
+      {
+        level: 'N2',
+        word: '模索する',
+        reading: 'もさくする',
+        meaning: 'to grope for; to search for (a solution/way)',
+        sentenceJp: '<ruby>環境<rt>かんきょう</rt></ruby><ruby>保護<rt>ほご</rt></ruby>と<ruby>経済<rt>けいざい</rt></ruby><ruby>成長<rt>せいちょう</rt></ruby>を<ruby>両立<rt>りょうりつ</rt></ruby>させる<ruby>道<rt>みち</rt></ruby>を<ruby>模索<rt>もさく</rt></ruby>している。',
+        sentenceEn: 'We are searching for a way to balance environmental protection and economic growth.'
+      },
+      {
+        level: 'N2',
+        word: '妥協する',
+        reading: 'だきょうする',
+        meaning: 'to compromise; to give in',
+        sentenceJp: '<ruby>品質<rt>ひんしつ</rt></ruby>に関しては、<ruby>一切<rt>いっさい</rt></ruby><ruby>妥協<rt>だきょう</rt></ruby>しないのが<ruby>彼<rt>かれ</rt></ruby>の<ruby>信念<rt>しんねん</rt></ruby>だ。',
+        sentenceEn: 'Never compromising on quality is his core belief.'
+      },
+      {
+        level: 'N2',
+        word: '曖昧',
+        reading: 'あいまい',
+        meaning: 'vague; ambiguous; unclear',
+        sentenceJp: '<ruby>曖昧<rt>あいまい</rt></ruby>な<ruby>返事<rt>へんじ</rt></ruby>は<ruby>誤解<rt>ごかい</rt></ruby>を<ruby>招<rt>まね</rt></ruby>くので、はっきり<ruby>断<rt>ことわ</rt></ruby>ったほうがいい。',
+        sentenceEn: 'Vague replies invite misunderstandings, so it is better to decline clearly.'
+      },
+      {
+        level: 'N2',
+        word: '不可欠',
+        reading: 'ふかけつ',
+        meaning: 'indispensable; essential',
+        sentenceJp: '<ruby>国際<rt>こくさい</rt></ruby><ruby>社会<rt>しゃかい</rt></ruby>で<ruby>活躍<rt>かつやく</rt></ruby>するには、<ruby>異文化<rt>いぶんか</rt></ruby>への<ruby>理解<rt>りかい</rt></ruby>が<ruby>不可欠<rt>ふかけつ</rt></ruby>だ。',
+        sentenceEn: 'Understanding different cultures is indispensable for thriving in international society.'
+      },
+      {
+        level: 'N2',
+        word: 'きっかけ',
+        reading: 'きっかけ',
+        meaning: 'chance; start; cue; excuse; motive',
+        sentenceJp: '<ruby>留学<rt>りゅうがく</rt></ruby>を<ruby>きっかけ</rt></ruby>に、<ruby>自分<rt>じぶん</rt></ruby>の<ruby>将来<rt>しょうらい</rt></ruby>について<ruby>真剣<rt>しんけん</rt></ruby>に<ruby>考<rt>かんが</rt></ruby>えるようになった。',
+        sentenceEn: 'Studying abroad became the catalyst for me to think seriously about my future.'
+      },
+
+      // --- N3 ---
+      {
+        level: 'N3',
+        word: '傾向',
+        reading: 'けいこう',
+        meaning: 'tendency; trend; inclination',
+        sentenceJp: '<ruby>最近<rt>さいきん</rt></ruby>の<ruby>若者<rt>わかもの</rt></ruby>は、テレビよりインターネットを<ruby>見<rt>み</rt></ruby>る<ruby>傾向<rt>けいこう</rt></ruby>がある。',
+        sentenceEn: 'Young people nowadays tend to watch the internet rather than television.'
+      },
+      {
+        level: 'N3',
+        word: '維持する',
+        reading: 'いじする',
+        meaning: 'to maintain; to preserve; to keep up',
+        sentenceJp: '<ruby>健康<rt>けんこう</rt></ruby>を<ruby>維持<rt>いじ</rt></ruby>するために、<ruby>毎朝<rt>まいあさ</rt></ruby>ジョギングをしている。',
+        sentenceEn: 'To maintain my health, I go jogging every morning.'
+      },
+      {
+        level: 'N3',
+        word: '工夫する',
+        reading: 'くふうする',
+        meaning: 'to devise; to scheme; to come up with a clever way',
+        sentenceJp: '<ruby>狭<rt>せま</rt></ruby>い<ruby>部屋<rt>へや</rt></ruby>でも<ruby>快適<rt>かいてき</rt></ruby>に<ruby>過<rt>す</rt></ruby>ごせるように、<ruby>家具<rt>かぐ</rt></ruby>の<ruby>配置<rt>はいち</rt></ruby>を<ruby>工夫<rt>くふう</rt></ruby>した。',
+        sentenceEn: 'I cleverly arranged the furniture so I could live comfortably even in a small room.'
+      },
+
+      // --- N4 ---
+      {
+        level: 'N4',
+        word: '習慣',
+        reading: 'しゅうかん',
+        meaning: 'habit; custom; cultural practice',
+        sentenceJp: '<ruby>日本<rt>にほん</rt></ruby>では、<ruby>家<rt>いえ</rt></ruby>に<ruby>入<rt>はい</rt></ruby>るときに<ruby>靴<rt>くつ</rt></ruby>を<ruby>脱<rt>ぬ</rt></ruby>ぐ<ruby>習慣<rt>しゅうかん</rt></ruby>がある。',
+        sentenceEn: 'In Japan, there is a custom of taking off one’s shoes when entering a house.'
+      },
+      {
+        level: 'N4',
+        word: '経験',
+        reading: 'けいけん',
+        meaning: 'experience',
+        sentenceJp: '<ruby>海外<rt>かいがい</rt></ruby>で<ruby>働<rt>はたら</rt></ruby>いた<ruby>経験<rt>けいけん</rt></ruby>は、<ruby>私<rt>わたし</rt></ruby>の<ruby>人生<rt>じんせい</rt></ruby>の<ruby>宝物<rt>たからもの</rt></ruby>です。',
+        sentenceEn: 'My experience working abroad is a treasure of my life.'
+      },
+
+      // --- N5 ---
+      {
+        level: 'N5',
+        word: '静か',
+        reading: 'しずか',
+        meaning: 'quiet; peaceful',
+        sentenceJp: '<ruby>夜<rt>よる</rt></ruby>の<ruby>図書館<rt>としょかん</rt></ruby>はとても<ruby>静<rt>しず</rt></ruby>かで、<ruby>勉強<rt>べんきょう</rt></ruby>しやすいです。',
+        sentenceEn: 'The library at night is very quiet and easy to study in.'
+      },
+      {
+        level: 'N5',
+        word: '天気',
+        reading: 'てんき',
+        meaning: 'weather',
+        sentenceJp: '<ruby>明日<rt>あした</rt></ruby>はいい<ruby>天気<rt>てんき</rt></ruby>になるといいですね。',
+        sentenceEn: 'I hope the weather will be nice tomorrow.'
+      }
+    ];
+
+    /**
+     * ============================================================================
+     * 2. APPLICATION STATE
+     * ============================================================================
+     */
+    const state = {
+      activeLevels: new Set(['N1']),
+      durationSec: 10,
+      isPlaying: true,
+      showReading: true,
+      showKanjiBreakdown: true,
+      blurMeaning: false,
+      rtSize: '0.62em',
+
+      // Data stores
+      vocabByLevel: {
+        N1: [],
+        N2: [],
+        N3: [],
+        N4: [],
+        N5: [],
+      },
+      kanjiCache: new Map(), // Caches individual kanji readings & meanings
+      fetchedLevels: new Set(),
+      history: [],       // Array of vocab objects visited
+      historyIndex: -1,  // Current index in history
+
+      // Timer & Animation tracking
+      elapsedMs: 0,
+      lastFrameTime: null,
+      rafId: null,
+      idleTimeout: null,
+      isTransitioning: false,
+    };
+
+    /**
+     * ============================================================================
+     * 3. DOM REFERENCES
+     * ============================================================================
+     */
+    const el = {
+      progressBar: document.getElementById('progressBar'),
+      infoBtn: document.getElementById('infoBtn'),
+      infoModal: document.getElementById('infoModal'),
+      closeInfoBtn: document.getElementById('closeInfoBtn'),
+      sourceBadge: document.getElementById('sourceBadge'),
+      cardStage: document.getElementById('cardStage'),
+      cardLevel: document.getElementById('cardLevel'),
+      cardCounter: document.getElementById('cardCounter'),
+      cardReading: document.getElementById('cardReading'),
+      cardWord: document.getElementById('cardWord'),
+      cardMeaning: document.getElementById('cardMeaning'),
+      kanjiBreakdown: document.getElementById('kanjiBreakdown'),
+      sentenceContainer: document.getElementById('sentenceContainer'),
+      sentenceJp: document.getElementById('sentenceJp'),
+      sentenceEn: document.getElementById('sentenceEn'),
+
+      levelBtns: document.querySelectorAll('.level-btn'),
+      durBtns: document.querySelectorAll('.dur-btn'),
+      prevBtn: document.getElementById('prevBtn'),
+      playPauseBtn: document.getElementById('playPauseBtn'),
+      playIcon: document.getElementById('playIcon'),
+      pauseIcon: document.getElementById('pauseIcon'),
+      nextBtn: document.getElementById('nextBtn'),
+      toggleReadingBtn: document.getElementById('toggleReadingBtn'),
+      toggleKanjiBtn: document.getElementById('toggleKanjiBtn'),
+      rtBtns: document.querySelectorAll('.rt-btn'),
+      toggleBlurBtn: document.getElementById('toggleBlurBtn'),
+      fullscreenBtn: document.getElementById('fullscreenBtn'),
+      toast: document.getElementById('toast'),
+    };
+
+    /**
+     * ============================================================================
+     * 4. DATA FETCHING & FLEXIBLE SCHEMA NORMALIZER
+     * ============================================================================
+     */
+
+    // Seed built-in items immediately
+    function seedBuiltInVocab() {
+      BUILTIN_VOCAB.forEach((item) => {
+        if (state.vocabByLevel[item.level]) {
+          state.vocabByLevel[item.level].push(item);
+        }
+      });
+    }
+
+    /**
+     * Converts bracketed furigana like "一概[いちがい]に" into HTML <ruby> tags
+     */
+    function formatFuriganaText(rawText) {
+      if (!rawText) return '';
+      if (rawText.includes('<ruby>')) return rawText;
+      // Convert Kanji[kana] pattern to <ruby>Kanji<rt>kana</rt></ruby>
+      return rawText.replace(/([一-龯々ヶ]+)\[([^\]]+)\]/g, '<ruby>$1<rt>$2</rt></ruby>');
+    }
+
+    /**
+     * Normalizes different external JSON shapes into a unified internal card structure
+     */
+    function normalizeEntry(raw, fallbackLevel) {
+      if (!raw || typeof raw !== 'object') return null;
+
+      const word = raw.word || raw.expression || raw.kanji || raw.vocab || raw.term || '';
+      const reading = raw.reading || raw.kana || raw.furigana || raw.hiragana || '';
+
+      // Meaning can be string or array of strings
+      let meaning = '';
+      if (Array.isArray(raw.meanings)) {
+        meaning = raw.meanings.slice(0, 3).join('; ');
+      } else if (Array.isArray(raw.meaning)) {
+        meaning = raw.meaning.slice(0, 3).join('; ');
+      } else {
+        meaning = raw.meaning || raw.english || raw.definition || raw.gloss || '';
+      }
+
+      if (!word && !reading) return null;
+
+      // Extract example sentence if present in various formats
+      let sentenceJp = '';
+      let sentenceEn = '';
+
+      if (Array.isArray(raw.sentences) && raw.sentences.length > 0) {
+        const s = raw.sentences[0];
+        sentenceJp = s.japanese || s.jp || s.text || s.sentence || '';
+        sentenceEn = s.english || s.en || s.translation || '';
+      } else if (raw.sentence && typeof raw.sentence === 'object') {
+        sentenceJp = raw.sentence.japanese || raw.sentence.jp || raw.sentence.text || '';
+        sentenceEn = raw.sentence.english || raw.sentence.en || raw.sentence.translation || '';
+      } else {
+        sentenceJp = raw.sentenceJp || raw.example_jp || raw.example || '';
+        sentenceEn = raw.sentenceEn || raw.example_en || raw.example_meaning || '';
+      }
+
+      const levelTag = raw.level
+        ? (String(raw.level).toUpperCase().startsWith('N') ? String(raw.level).toUpperCase() : `N${raw.level}`)
+        : fallbackLevel;
+
+      return {
+        level: levelTag,
+        word: word || reading,
+        reading: word ? reading : '',
+        meaning: meaning || 'Definition unavailable',
+        sentenceJp: formatFuriganaText(sentenceJp),
+        sentenceEn: sentenceEn,
+      };
+    }
+
+    /**
+     * Attempts to load external JLPT JSON datasets from public CDNs with graceful fallback
+     */
+    async function loadExternalLevelData(level) {
+      if (state.fetchedLevels.has(level)) return;
+      state.fetchedLevels.add(level);
+
+      const lower = level.toLowerCase();
+      const num = level.replace('N', '');
+
+      // Candidate public open-source endpoints
+      const endpoints = [
+        `https://cdn.jsdelivr.net/gh/evanclan/OpenJLPT@main/data/${lower}.json`,
+        `https://jlpt-vocab-api.vercel.app/api/words/all?level=${num}`,
+      ];
+
+      for (const url of endpoints) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+          const response = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+
+          if (!response.ok) continue;
+          const data = await response.json();
+          const list = Array.isArray(data) ? data : (data.words || data.data || []);
+
+          if (Array.isArray(list) && list.length > 0) {
+            const normalized = list
+              .map((item) => normalizeEntry(item, level))
+              .filter(Boolean);
+
+            if (normalized.length > 0) {
+              // Merge prioritizing items that include example sentences
+              const withSentences = normalized.filter((item) => item.sentenceJp);
+              const withoutSentences = normalized.filter((item) => !item.sentenceJp);
+
+              // Keep existing curated items + rich external items
+              const existing = state.vocabByLevel[level];
+              state.vocabByLevel[level] = [
+                ...existing,
+                ...withSentences,
+                ...withoutSentences,
+              ];
+
+              updateSourceBadge();
+              return;
+            }
+          }
+        } catch (err) {
+          // Silently try next mirror or retain built-in offline dataset
+        }
+      }
+
+      updateSourceBadge();
+    }
+
+    function updateSourceBadge() {
+      let totalLoaded = 0;
+      state.activeLevels.forEach((lvl) => {
+        totalLoaded += state.vocabByLevel[lvl]?.length || 0;
+      });
+      el.sourceBadge.textContent = `${totalLoaded.toLocaleString()} cards active`;
+    }
+
+    /**
+     * ============================================================================
+     * 4B. INDIVIDUAL KANJI EXTRACTOR & LOOKUP (readings + meaning)
+     * ============================================================================
+     */
+
+    // Extract unique CJK ideographs from a word string
+    function extractUniqueKanji(text) {
+      if (!text) return [];
+      const matches = text.match(/[\u4E00-\u9FAF\u3400-\u4DBF]/g);
+      return matches ? [...new Set(matches)] : [];
+    }
+
+    // Fetch single kanji readings & meaning from kanjiapi.dev and cache locally
+    async function fetchKanjiInfo(char) {
+      if (state.kanjiCache.has(char)) {
+        return state.kanjiCache.get(char);
+      }
+
+      try {
+        const res = await fetch(`https://kanjiapi.dev/v1/kanji/${encodeURIComponent(char)}`);
+        if (!res.ok) throw new Error('Kanji lookup failed');
+        const data = await res.json();
+
+        // Clean okurigana dots (e.g., "ひと.つ" -> "ひと") and deduplicate readings
+        const cleanReadings = (arr) =>
+          [...new Set((arr || []).map((r) => r.split('.')[0].replace(/-/g, '')))].filter(Boolean);
+
+        const onReadings = cleanReadings(data.on_readings);
+        const kunReadings = cleanReadings(data.kun_readings);
+        const combinedReadings = [...onReadings, ...kunReadings].slice(0, 3).join('・');
+        const meaning = (data.meanings || []).slice(0, 2).join(', ');
+
+        const info = {
+          kanji: char,
+          readings: combinedReadings,
+          meaning: meaning.toLowerCase(),
+        };
+
+        state.kanjiCache.set(char, info);
+        return info;
+      } catch (err) {
+        state.kanjiCache.set(char, null);
+        return null;
+      }
+    }
+
+    // Render the compact kanji breakdown strip for the current word
+    async function renderKanjiBreakdown(word) {
+      const kanjiChars = extractUniqueKanji(word);
+
+      if (!state.showKanjiBreakdown || kanjiChars.length === 0) {
+        el.kanjiBreakdown.classList.add('hidden');
+        el.kanjiBreakdown.innerHTML = '';
+        return;
+      }
+
+      // Fetch all characters in parallel
+      const results = await Promise.all(kanjiChars.map((ch) => fetchKanjiInfo(ch)));
+
+      // Guard against race conditions if the slide already changed while fetching
+      const activeCard = state.history[state.historyIndex];
+      if (!activeCard || activeCard.word !== word || !state.showKanjiBreakdown) return;
+
+      const validItems = results.filter(Boolean);
+      if (validItems.length === 0) {
+        el.kanjiBreakdown.classList.add('hidden');
+        return;
+      }
+
+      el.kanjiBreakdown.innerHTML = validItems
+        .map(
+          (item) => `
+          <div class="inline-flex items-baseline gap-2 px-3 py-1.5 bg-surface text-white">
+            <span class="font-jp text-base text-white font-medium">${item.kanji}</span>
+            ${item.readings ? `<span class="font-jp text-sm text-white">${item.readings}</span>` : ''}
+            ${item.meaning ? `<span class="blur-target text-sm text-white">/${item.meaning}</span>` : ''}
+          </div>
+        `
+        )
+        .join('');
+
+      el.kanjiBreakdown.classList.remove('hidden');
+    }
+
+    /**
+     * ============================================================================
+     * 5. SLIDESHOW & RENDERING LOGIC
+     * ============================================================================
+     */
+
+    function getActivePool() {
+      let pool = [];
+      state.activeLevels.forEach((lvl) => {
+        if (state.vocabByLevel[lvl]) {
+          pool = pool.concat(state.vocabByLevel[lvl]);
+        }
+      });
+      return pool.length > 0 ? pool : BUILTIN_VOCAB;
+    }
+
+    function pickNextWord() {
+      const pool = getActivePool();
+      if (pool.length === 1) return pool[0];
+
+      const currentCard = state.history[state.historyIndex];
+      let candidate = null;
+      let attempts = 0;
+
+      // Avoid repeating the exact same card back-to-back
+      do {
+        const randIdx = Math.floor(Math.random() * pool.length);
+        candidate = pool[randIdx];
+        attempts++;
+      } while (currentCard && candidate.word === currentCard.word && attempts < 10);
+
+      return candidate;
+    }
+
+    function renderCard(card, animate = true) {
+      if (!card) return;
+
+      const applyContent = () => {
+        el.cardLevel.textContent = card.level || 'N1';
+        el.cardCounter.textContent = `#${state.historyIndex + 1}`;
+        el.cardWord.textContent = card.word;
+
+        // Reading visibility
+        if (card.reading && card.reading !== card.word) {
+          el.cardReading.textContent = card.reading;
+          el.cardReading.style.visibility = state.showReading ? 'visible' : 'hidden';
+        } else {
+          el.cardReading.textContent = '\u00A0';
+        }
+
+        el.cardMeaning.textContent = card.meaning;
+
+        // Individual kanji breakdown strip
+        renderKanjiBreakdown(card.word);
+
+        // Sentence handling (some external dictionary entries may lack example sentences)
+        if (card.sentenceJp) {
+          el.sentenceContainer.classList.remove('hidden');
+          el.sentenceJp.innerHTML = card.sentenceJp;
+          el.sentenceEn.textContent = card.sentenceEn || '';
+          el.sentenceEn.style.display = card.sentenceEn ? 'block' : 'none';
+        } else {
+          el.sentenceContainer.classList.add('hidden');
+        }
+      };
+
+      if (!animate) {
+        applyContent();
+        return;
+      }
+
+      state.isTransitioning = true;
+      el.cardStage.classList.add('fade-out');
+
+      setTimeout(() => {
+        applyContent();
+        el.cardStage.classList.remove('fade-out');
+        state.isTransitioning = false;
+      }, 320);
+    }
+
+    function advanceSlide() {
+      // If user stepped backward in history, move forward through existing history first
+      if (state.historyIndex < state.history.length - 1) {
+        state.historyIndex++;
+        renderCard(state.history[state.historyIndex], true);
+      } else {
+        const nextCard = pickNextWord();
+        state.history.push(nextCard);
+        // Cap history size to 200 items to keep memory tiny
+        if (state.history.length > 200) {
+          state.history.shift();
+        } else {
+          state.historyIndex++;
+        }
+        renderCard(nextCard, true);
+      }
+      resetTimerProgress();
+    }
+
+    function previousSlide() {
+      if (state.historyIndex > 0) {
+        state.historyIndex--;
+        renderCard(state.history[state.historyIndex], true);
+        resetTimerProgress();
+      } else {
+        showToast('At the beginning of session history');
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 6. SMOOTH REQUESTANIMATIONFRAME COUNTDOWN TIMER
+     * ============================================================================
+     */
+
+    function resetTimerProgress() {
+      state.elapsedMs = 0;
+      state.lastFrameTime = performance.now();
+      el.progressBar.style.width = '0%';
+    }
+
+    function animationLoop(now) {
+      if (!state.lastFrameTime) {
+        state.lastFrameTime = now;
+      }
+
+      const delta = now - state.lastFrameTime;
+      state.lastFrameTime = now;
+
+      if (state.isPlaying && !state.isTransitioning) {
+        state.elapsedMs += delta;
+        const totalMs = state.durationSec * 1000;
+        const pct = Math.min((state.elapsedMs / totalMs) * 100, 100);
+        el.progressBar.style.width = `${pct}%`;
+
+        if (state.elapsedMs >= totalMs) {
+          advanceSlide();
+        }
+      }
+
+      state.rafId = requestAnimationFrame(animationLoop);
+    }
+
+    /**
+     * ============================================================================
+     * 7. INTERACTIVE CONTROLS & KEYBOARD SHORTCUTS
+     * ============================================================================
+     */
+
+    function togglePlayPause() {
+      state.isPlaying = !state.isPlaying;
+      state.lastFrameTime = performance.now();
+
+      if (state.isPlaying) {
+        el.pauseIcon.classList.remove('hidden');
+        el.playIcon.classList.add('hidden');
+        showToast('Resumed');
+      } else {
+        el.pauseIcon.classList.add('hidden');
+        el.playIcon.classList.remove('hidden');
+        showToast('Paused');
+      }
+    }
+
+    function toggleLevel(level) {
+      if (state.activeLevels.has(level)) {
+        // Prevent deselecting the last remaining level
+        if (state.activeLevels.size === 1) {
+          showToast('At least one JLPT level must stay active');
+          return;
+        }
+        state.activeLevels.delete(level);
+      } else {
+        state.activeLevels.add(level);
+        loadExternalLevelData(level);
+      }
+
+      // Update UI buttons
+      el.levelBtns.forEach((btn) => {
+        const lvl = btn.dataset.level;
+        if (state.activeLevels.has(lvl)) {
+          btn.className = 'level-btn px-2.5 py-1.5 text-sm font-medium transition-colors bg-white text-void';
+        } else {
+          btn.className = 'level-btn px-2.5 py-1.5 text-sm font-normal transition-colors text-white hover:bg-white/15';
+        }
+      });
+
+      updateSourceBadge();
+      advanceSlide();
+    }
+
+    function setDuration(seconds) {
+      state.durationSec = seconds;
+      resetTimerProgress();
+
+      el.durBtns.forEach((btn) => {
+        const sec = Number(btn.dataset.sec);
+        if (sec === seconds) {
+          btn.className = 'dur-btn px-2 py-1.5 text-sm bg-white text-void font-medium transition-colors';
+        } else {
+          btn.className = 'dur-btn px-2 py-1.5 text-sm text-white hover:bg-white/15 transition-colors';
+        }
+      });
+
+      showToast(`Slide timer: ${seconds}s`);
+    }
+
+    function toggleReading() {
+      state.showReading = !state.showReading;
+      const currentCard = state.history[state.historyIndex];
+      if (currentCard && currentCard.reading && currentCard.reading !== currentCard.word) {
+        el.cardReading.style.visibility = state.showReading ? 'visible' : 'hidden';
+      }
+
+      if (state.showReading) {
+        el.toggleReadingBtn.classList.add('bg-white/15');
+        el.toggleReadingBtn.classList.remove('opacity-50');
+      } else {
+        el.toggleReadingBtn.classList.remove('bg-white/15');
+        el.toggleReadingBtn.classList.add('opacity-50');
+      }
+      showToast(state.showReading ? 'Furigana shown' : 'Furigana hidden');
+    }
+
+    function toggleKanjiBreakdown() {
+      state.showKanjiBreakdown = !state.showKanjiBreakdown;
+      const currentCard = state.history[state.historyIndex];
+
+      if (state.showKanjiBreakdown) {
+        el.toggleKanjiBtn.classList.add('bg-white/15');
+        el.toggleKanjiBtn.classList.remove('opacity-50');
+        if (currentCard) renderKanjiBreakdown(currentCard.word);
+      } else {
+        el.toggleKanjiBtn.classList.remove('bg-white/15');
+        el.toggleKanjiBtn.classList.add('opacity-50');
+        el.kanjiBreakdown.classList.add('hidden');
+      }
+      showToast(state.showKanjiBreakdown ? 'Kanji breakdown shown' : 'Kanji breakdown hidden');
+    }
+
+    function setFuriganaSize(size) {
+      state.rtSize = size;
+      document.documentElement.style.setProperty('--rt-size', size);
+
+      el.rtBtns.forEach((btn) => {
+        if (btn.dataset.rtsize === size) {
+          btn.className = 'rt-btn px-1.5 py-1 text-sm bg-white text-void font-medium transition-colors';
+        } else {
+          btn.className = 'rt-btn px-1.5 py-1 text-sm text-white hover:bg-white/15 transition-colors';
+        }
+      });
+
+      const labelMap = { '0.48em': 'Small', '0.62em': 'Medium', '0.78em': 'Large' };
+      showToast(`Furigana size: ${labelMap[size] || size}`);
+    }
+
+    function toggleBlurMeaning() {
+      state.blurMeaning = !state.blurMeaning;
+      document.body.classList.toggle('blur-active', state.blurMeaning);
+
+      if (state.blurMeaning) {
+        el.toggleBlurBtn.classList.add('bg-white', 'text-void');
+        el.toggleBlurBtn.classList.remove('text-white', 'hover:bg-white/15');
+        showToast('English meanings blurred (hover to peek)');
+      } else {
+        el.toggleBlurBtn.classList.remove('bg-white', 'text-void');
+        el.toggleBlurBtn.classList.add('text-white', 'hover:bg-white/15');
+        showToast('English meanings visible');
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {
+          showToast('Fullscreen blocked by browser');
+        });
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function toggleInfoModal(forceState) {
+      const shouldShow = typeof forceState === 'boolean'
+        ? forceState
+        : el.infoModal.classList.contains('hidden');
+      el.infoModal.classList.toggle('hidden', !shouldShow);
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      el.toast.textContent = msg;
+      el.toast.classList.remove('opacity-0');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        el.toast.classList.add('opacity-0');
+      }, 1800);
+    }
+
+    // Auto-hide HUD & cursor after 3.5s of mouse inactivity for pure ambient screensaver feel
+    function registerActivity() {
+      document.body.classList.remove('idle-cursor');
+      clearTimeout(state.idleTimeout);
+      state.idleTimeout = setTimeout(() => {
+        document.body.classList.add('idle-cursor');
+      }, 3500);
+    }
+
+    /**
+     * ============================================================================
+     * 8. EVENT LISTENERS & INITIALIZATION
+     * ============================================================================
+     */
+    function bindEvents() {
+      el.levelBtns.forEach((btn) => {
+        btn.addEventListener('click', () => toggleLevel(btn.dataset.level));
+      });
+
+      el.durBtns.forEach((btn) => {
+        btn.addEventListener('click', () => setDuration(Number(btn.dataset.sec)));
+      });
+
+      el.playPauseBtn.addEventListener('click', togglePlayPause);
+      el.nextBtn.addEventListener('click', advanceSlide);
+      el.prevBtn.addEventListener('click', previousSlide);
+      el.toggleReadingBtn.addEventListener('click', toggleReading);
+      el.toggleKanjiBtn.addEventListener('click', toggleKanjiBreakdown);
+      el.rtBtns.forEach((btn) => {
+        btn.addEventListener('click', () => setFuriganaSize(btn.dataset.rtsize));
+      });
+      el.toggleBlurBtn.addEventListener('click', toggleBlurMeaning);
+      el.fullscreenBtn.addEventListener('click', toggleFullscreen);
+      el.infoBtn.addEventListener('click', () => toggleInfoModal(true));
+      el.closeInfoBtn.addEventListener('click', () => toggleInfoModal(false));
+      el.infoModal.addEventListener('click', (e) => {
+        if (e.target === el.infoModal) toggleInfoModal(false);
+      });
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        // Ignore if modifier keys held
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+        if (e.key === '?' || e.key === '/') {
+          e.preventDefault();
+          toggleInfoModal();
+          return;
+        }
+
+        if (e.code === 'Escape' && !el.infoModal.classList.contains('hidden')) {
+          e.preventDefault();
+          toggleInfoModal(false);
+          return;
+        }
+
+        switch (e.code) {
+          case 'Space':
+            e.preventDefault();
+            togglePlayPause();
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            advanceSlide();
+            break;
+          case 'ArrowLeft':
+            e.preventDefault();
+            previousSlide();
+            break;
+          case 'KeyF':
+            e.preventDefault();
+            toggleFullscreen();
+            break;
+          case 'KeyM':
+            e.preventDefault();
+            toggleBlurMeaning();
+            break;
+          case 'KeyR':
+            e.preventDefault();
+            toggleReading();
+            break;
+          case 'KeyK':
+            e.preventDefault();
+            toggleKanjiBreakdown();
+            break;
+        }
+      });
+
+      // Mouse & touch activity detection for HUD auto-hide
+      ['mousemove', 'mousedown', 'touchstart', 'keydown'].forEach((evt) => {
+        window.addEventListener(evt, registerActivity, { passive: true });
+      });
+    }
+
+    async function init() {
+      seedBuiltInVocab();
+      document.documentElement.style.setProperty('--rt-size', state.rtSize);
+      bindEvents();
+      updateSourceBadge();
+
+      // Immediately display the first N1 card
+      const firstCard = pickNextWord();
+      state.history.push(firstCard);
+      state.historyIndex = 0;
+      renderCard(firstCard, false);
+
+      // Start timer loop & auto-hide timer
+      resetTimerProgress();
+      state.rafId = requestAnimationFrame(animationLoop);
+      registerActivity();
+
+      // Background-fetch full N1 dataset from CDN
+      await loadExternalLevelData('N1');
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
