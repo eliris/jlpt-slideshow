@@ -27,7 +27,7 @@
     };
   </script>
   <style>
-    /* Custom transitions and utility styling */
+    /* transitions */
     * {
       box-sizing: border-box;
       border-radius: 0 !important;
@@ -42,7 +42,7 @@
       user-select: none;
     }
 
-    /* Card transition animations */
+    /* transition animations */
     .card-stage {
       transition: opacity 0.45s ease, transform 0.45s ease;
       opacity: 1;
@@ -54,7 +54,7 @@
       transform: translateY(6px);
     }
 
-    /* Blur mode for active recall */
+    /* blurring */
     .blur-target {
       transition: filter 0.3s ease, opacity 0.3s ease;
     }
@@ -70,7 +70,7 @@
       opacity: 1;
     }
 
-    /* Auto-hiding HUD controls */
+    /* auto-hide HUD */
     .hud-layer {
       transition: opacity 0.45s ease, transform 0.45s ease;
       opacity: 1;
@@ -105,7 +105,7 @@
       letter-spacing: 0.02em;
     }
 
-    /* Custom subtle scrollbar if text ever overflows on tiny viewports */
+    /* a subtle scrollbar if text ever overflows on tiny viewports */
     ::-webkit-scrollbar {
       width: 4px;
     }
@@ -116,12 +116,12 @@
 </head>
 <body class="bg-void text-white font-sans text-base min-h-screen w-screen flex flex-col justify-between relative selection:bg-white/20">
 
-  <!-- Top Sleek Progress Bar -->
+  <!-- Top progress bar -->
   <div class="fixed top-0 left-0 right-0 h-[2px] bg-white/10 z-50">
     <div id="progressBar" class="h-full bg-white w-0 transition-none"></div>
   </div>
 
-  <!-- Top Minimal Status / HUD Bar -->
+  <!-- HUD -->
   <header class="hud-layer hud-top w-full px-6 py-5 sm:px-10 sm:py-6 flex items-center justify-between z-30 text-sm">
     <div class="flex items-center gap-3">
       <button id="infoBtn" title="About & Shortcuts (?)" class="px-2.5 py-0.5 bg-surface text-white hover:bg-white hover:text-void transition-colors font-mono">
@@ -132,7 +132,7 @@
       </span>
     </div>
 
-    <!-- Quick Keyboard Legend (Desktop) -->
+    <!-- Keyboard notation (Desktop) -->
     <div class="hidden md:flex items-center gap-5 text-sm text-white">
       <span><kbd class="px-1.5 py-0.5 bg-surface text-white font-mono">Space</kbd> Pause</span>
       <span><kbd class="px-1.5 py-0.5 bg-surface text-white font-mono">←/→</kbd> Nav</span>
@@ -141,7 +141,7 @@
     </div>
   </header>
 
-  <!-- Info / Help Overlay Modal -->
+  <!-- Help overlay -->
   <div id="infoModal" class="hidden fixed inset-0 bg-void/90 z-50 flex items-center justify-center p-6">
     <div class="bg-surface text-white w-full max-w-md p-6 sm:p-8 flex flex-col gap-5 text-sm">
       <div class="flex items-center justify-between">
@@ -151,7 +151,7 @@
         </button>
       </div>
       <p class="text-white leading-relaxed">
-        A hands-free passive vocabulary display for JLPT N5–N1. Cards advance automatically and the interface fades out after a few seconds of inactivity.
+        A hands-free passive vocabulary slideshow display for JLPT N5 - N1.
       </p>
       <div class="flex flex-col gap-2 bg-void p-4 text-white">
         <div class="flex justify-between"><span>Play / Pause</span><kbd class="font-mono">Space</kbd></div>
@@ -174,11 +174,11 @@
     </div>
   </div>
 
-  <!-- Main Centered Flashcard Display -->
+  <!-- main flashcard -->
   <main class="flex-1 flex items-center justify-center px-6 sm:px-12 md:px-20 py-4 z-10">
     <div id="cardStage" class="card-stage w-full max-w-4xl flex flex-col items-center text-center">
       
-      <!-- Top Level Tag & Counter -->
+      <!-- tag and counter -->
       <div class="flex items-center gap-4 mb-6 sm:mb-8 text-sm">
         <span id="cardLevel" class="px-2.5 py-0.5 font-semibold tracking-wider uppercase bg-surface text-white">
           N1
@@ -188,26 +188,26 @@
         </span>
       </div>
 
-      <!-- Furigana / Kana Reading -->
+      <!-- Furigana reading -->
       <div id="cardReading" class="font-jp text-lg sm:text-xl text-white font-normal tracking-widest mb-2 min-h-[1.5em]">
         ...
       </div>
 
-      <!-- Main Kanji / Expression -->
+      <!-- main kanji -->
       <h1 id="cardWord" class="font-jp text-5xl sm:text-7xl md:text-8xl font-medium text-white tracking-wide leading-tight mb-6 break-keep">
         読み込み中
       </h1>
 
-      <!-- English Meaning -->
+      <!-- English meaning -->
       <p id="cardMeaning" class="blur-target text-base sm:text-lg font-normal text-white max-w-2xl leading-relaxed mb-6">
         Loading vocabulary deck...
       </p>
 
-      <!-- Individual Kanji Breakdown Strip -->
+      <!-- Kanji breakdown -->
       <div id="kanjiBreakdown" class="hidden flex flex-wrap items-center justify-center gap-3 mb-8 px-3 max-w-3xl text-sm text-white">
       </div>
 
-      <!-- Example Sentence Container -->
+      <!-- Example sentence -->
       <div id="sentenceContainer" class="max-w-3xl flex flex-col items-center gap-2.5 pt-2">
         <p id="sentenceJp" class="font-jp text-lg sm:text-xl text-white font-normal leading-relaxed tracking-wide">
           ...
@@ -220,11 +220,11 @@
     </div>
   </main>
 
-  <!-- Bottom Floating Control Bar -->
+  <!-- Bottom bar -->
   <footer class="hud-layer hud-bottom w-full px-4 py-5 sm:px-8 sm:py-6 flex justify-center z-30">
     <div class="flex flex-wrap items-center justify-center gap-3 px-4 py-2 bg-surface max-w-full text-sm text-white">
       
-      <!-- JLPT Level Multi-Select Buttons -->
+      <!-- level selection -->
       <div class="flex items-center gap-1 pr-2" role="group" aria-label="JLPT Levels">
         <button data-level="N1" class="level-btn px-2.5 py-1.5 text-sm font-medium transition-colors bg-white text-void">N1</button>
         <button data-level="N2" class="level-btn px-2.5 py-1.5 text-sm font-normal transition-colors text-white hover:bg-white/15">N2</button>
@@ -233,7 +233,7 @@
         <button data-level="N5" class="level-btn px-2.5 py-1.5 text-sm font-normal transition-colors text-white hover:bg-white/15">N5</button>
       </div>
 
-      <!-- Playback Controls: Prev / Play-Pause / Next -->
+      <!-- Playback controls -->
       <div class="flex items-center gap-1 pr-2">
         <button id="prevBtn" title="Previous Word (Left Arrow)" class="p-2 text-white hover:bg-white/15 transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -242,12 +242,12 @@
         </button>
 
         <button id="playPauseBtn" title="Play / Pause (Space)" class="p-2 bg-white/15 text-white hover:bg-white/25 transition-colors">
-          <!-- Pause Icon (default playing) -->
+          <!-- Pause Icon -->
           <svg id="pauseIcon" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
             <rect x="6" y="5" width="4" height="14" />
             <rect x="14" y="5" width="4" height="14" />
           </svg>
-          <!-- Play Icon (hidden when playing) -->
+          <!-- Play Icon -->
           <svg id="playIcon" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
           </svg>
@@ -260,7 +260,7 @@
         </button>
       </div>
 
-      <!-- Timer Duration Selector -->
+      <!-- Timer -->
       <div class="flex items-center gap-1 pr-2" role="group" aria-label="Slide Duration">
         <button data-sec="5" class="dur-btn px-2 py-1.5 text-sm text-white hover:bg-white/15 transition-colors">5s</button>
         <button data-sec="8" class="dur-btn px-2 py-1.5 text-sm text-white hover:bg-white/15 transition-colors">8s</button>
@@ -269,7 +269,7 @@
         <button data-sec="20" class="dur-btn px-2 py-1.5 text-sm text-white hover:bg-white/15 transition-colors">20s</button>
       </div>
 
-      <!-- Extra Toggles: Reading / Kanji Breakdown / Meaning Blur / Fullscreen -->
+      <!-- Extra buttons -->
       <div class="flex items-center gap-1">
         <button id="toggleReadingBtn" title="Toggle Furigana Reading (R)" class="px-2.5 py-1.5 text-sm font-jp text-white bg-white/15 hover:bg-white/25 transition-colors">
           かな
@@ -279,7 +279,7 @@
           漢字
         </button>
 
-        <!-- Furigana Size Setting -->
+        <!-- Furigana size -->
         <div class="flex items-center gap-0.5 px-1" role="group" aria-label="Furigana Size" title="Sentence Furigana Size">
           <span class="text-sm text-white pr-1 select-none">ふり</span>
           <button data-rtsize="0.48em" class="rt-btn px-1.5 py-1 text-sm text-white hover:bg-white/15 transition-colors">S</button>
@@ -310,12 +310,7 @@
   </div>
 
   <script>
-    /**
-     * ============================================================================
-     * 1. BUILT-IN CURATED FALLBACK DATASET (N1 - N5)
-     * Ensures instant zero-latency boot and 100% offline/CORS-resilient operation.
-     * ============================================================================
-     */
+
     const BUILTIN_VOCAB = [
       // --- N1 ---
       {
@@ -552,11 +547,7 @@
       }
     ];
 
-    /**
-     * ============================================================================
-     * 2. APPLICATION STATE
-     * ============================================================================
-     */
+    /* 2. APPLICATION STATE */
     const state = {
       activeLevels: new Set(['N1']),
       durationSec: 10,
@@ -574,7 +565,7 @@
         N4: [],
         N5: [],
       },
-      kanjiCache: new Map(), // Caches individual kanji readings & meanings
+      kanjiCache: new Map(), // To cache kanji readings & meanings
       fetchedLevels: new Set(),
       history: [],       // Array of vocab objects visited
       historyIndex: -1,  // Current index in history
@@ -587,11 +578,7 @@
       isTransitioning: false,
     };
 
-    /**
-     * ============================================================================
-     * 3. DOM REFERENCES
-     * ============================================================================
-     */
+    /* 3. DOM References */
     const el = {
       progressBar: document.getElementById('progressBar'),
       infoBtn: document.getElementById('infoBtn'),
@@ -624,11 +611,7 @@
       toast: document.getElementById('toast'),
     };
 
-    /**
-     * ============================================================================
-     * 4. DATA FETCHING & FLEXIBLE SCHEMA NORMALIZER
-     * ============================================================================
-     */
+    /* 4. DATA FETCHING */
 
     // Seed built-in items immediately
     function seedBuiltInVocab() {
@@ -639,9 +622,7 @@
       });
     }
 
-    /**
-     * Converts bracketed furigana like "一概[いちがい]に" into HTML <ruby> tags
-     */
+    /* Converting bracketed furigana like "一概[いちがい]に" into HTML <ruby> tags */
     function formatFuriganaText(rawText) {
       if (!rawText) return '';
       if (rawText.includes('<ruby>')) return rawText;
@@ -649,9 +630,7 @@
       return rawText.replace(/([一-龯々ヶ]+)\[([^\]]+)\]/g, '<ruby>$1<rt>$2</rt></ruby>');
     }
 
-    /**
-     * Normalizes different external JSON shapes into a unified internal card structure
-     */
+    /* Normalizing different external JSON shapes into a unified internal card structure */
     function normalizeEntry(raw, fallbackLevel) {
       if (!raw || typeof raw !== 'object') return null;
 
@@ -766,11 +745,7 @@
       el.sourceBadge.textContent = `${totalLoaded.toLocaleString()} cards active`;
     }
 
-    /**
-     * ============================================================================
-     * 4B. INDIVIDUAL KANJI EXTRACTOR & LOOKUP (readings + meaning)
-     * ============================================================================
-     */
+    /* 4B. Individual kanji lookup (readings + meaning) */
 
     // Extract unique CJK ideographs from a word string
     function extractUniqueKanji(text) {
@@ -851,11 +826,7 @@
       el.kanjiBreakdown.classList.remove('hidden');
     }
 
-    /**
-     * ============================================================================
-     * 5. SLIDESHOW & RENDERING LOGIC
-     * ============================================================================
-     */
+    /* 5. slideshow rendering & logic */
 
     function getActivePool() {
       let pool = [];
@@ -961,11 +932,7 @@
       }
     }
 
-    /**
-     * ============================================================================
-     * 6. SMOOTH REQUESTANIMATIONFRAME COUNTDOWN TIMER
-     * ============================================================================
-     */
+    /* animation frame and countdown timer */
 
     function resetTimerProgress() {
       state.elapsedMs = 0;
@@ -995,11 +962,7 @@
       state.rafId = requestAnimationFrame(animationLoop);
     }
 
-    /**
-     * ============================================================================
-     * 7. INTERACTIVE CONTROLS & KEYBOARD SHORTCUTS
-     * ============================================================================
-     */
+    /* keyboard shortcuts */
 
     function togglePlayPause() {
       state.isPlaying = !state.isPlaying;
@@ -1159,11 +1122,7 @@
       }, 3500);
     }
 
-    /**
-     * ============================================================================
-     * 8. EVENT LISTENERS & INITIALIZATION
-     * ============================================================================
-     */
+    /* init & event listeners */
     function bindEvents() {
       el.levelBtns.forEach((btn) => {
         btn.addEventListener('click', () => toggleLevel(btn.dataset.level));
