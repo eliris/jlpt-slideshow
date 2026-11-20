@@ -1,15 +1,15 @@
-# JLPT Ambient
+# JLPT Slideshow
 
-A lightweight, zero-dependency passive vocabulary slideshow for JLPT N5–N1. Designed to run fullscreen as an ambient study display while eating, listening to music, or working.
+A lightweight, zero-dependency passive vocabulary slideshow for JLPT N5 - N1 designed to run fullscreen for passive studying while eating or doing something else.
 
-**Live Demo:** [https://<your-username>.github.io/jlpt-ambient/](http://eliris.github.io/jlpt-slideshow/)
+**Live Demo:** [https://eliris.github.io/jlpt-slideshow/](https://eliris.github.io/jlpt-slideshow/)
 
 ## Features
-- **Hands-Free Slideshow:** Smooth progress bar with configurable 5s–20s intervals and auto-hiding HUD/cursor after 3.5 seconds of inactivity.
-- **Multi-Level Filtering:** Mix and match JLPT N1 through N5 decks on the fly.
-- **Kanji Breakdown & Furigana:** Displays individual kanji readings and meanings beneath each word, plus adjustable sentence furigana sizing (`S` / `M` / `L`).
-- **Active Recall Blur Mode:** Blur English definitions and translations (`M`) and hover to peek.
-- **Offline Resilient:** Boots instantly with built-in curated cards and fetches full community datasets in the background.
+- **Hands-Free Slideshow:** Configurable 5s - 20s intervals and auto-hiding the HUD/cursor after 3.5 seconds of inactivity.
+- **Multiple JLPT Level Filtering:** Mix and match JLPT N1 through N5 decks.
+- **Kanji Breakdown & Furigana:** Displays individual kanji readings and meanings under each word. Furigana can also be resized. (`S` / `M` / `L`).
+- **Blur Mode:** Blur English definitions and translations (`M`) and hover to peek.
+- **Mostly Offline:** Boots instantly with built-in cards and fetches full community datasets in the background.
 
 ## Keyboard Shortcuts
 | Key | Action |
@@ -23,5 +23,5 @@ A lightweight, zero-dependency passive vocabulary slideshow for JLPT N5–N1. De
 | `?` | Open info & shortcuts overlay |
 
 ## Data Sources
-- Vocabulary & example sentences via [OpenJLPT](https://github.com/evanclan/OpenJLPT) (JMdict & Tatoeba)
-- Individual kanji readings & meanings via [kanjiapi.dev](https://kanjiapi.dev/)
+- Vocabulary & example sentences using [OpenJLPT](https://github.com/evanclan/OpenJLPT) (JMdict & Tatoeba)
+- Individual kanji readings & meanings using [kanjiapi.dev](https://kanjiapi.dev/)
