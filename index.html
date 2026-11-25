@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JLPT Passive Ambient Slideshow</title>
-  <!-- Google Fonts for crisp Japanese & UI typography -->
+  <title>JLPT Slideshow</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet" />
@@ -27,7 +26,6 @@
     };
   </script>
   <style>
-    /* transitions */
     * {
       box-sizing: border-box;
       border-radius: 0 !important;
@@ -42,7 +40,6 @@
       user-select: none;
     }
 
-    /* transition animations */
     .card-stage {
       transition: opacity 0.45s ease, transform 0.45s ease;
       opacity: 1;
@@ -54,7 +51,6 @@
       transform: translateY(6px);
     }
 
-    /* blurring */
     .blur-target {
       transition: filter 0.3s ease, opacity 0.3s ease;
     }
@@ -70,7 +66,6 @@
       opacity: 1;
     }
 
-    /* auto-hide HUD */
     .hud-layer {
       transition: opacity 0.45s ease, transform 0.45s ease;
       opacity: 1;
@@ -94,7 +89,7 @@
       transform: translateY(8px);
     }
 
-    /* Ruby furigana styling for sentences */
+    /* furigana styling */
     ruby {
       ruby-align: center;
     }
@@ -105,7 +100,7 @@
       letter-spacing: 0.02em;
     }
 
-    /* a subtle scrollbar if text ever overflows on tiny viewports */
+    /* tiny scrollbar thingy for small screens */
     ::-webkit-scrollbar {
       width: 4px;
     }
@@ -116,12 +111,10 @@
 </head>
 <body class="bg-void text-white font-sans text-base min-h-screen w-screen flex flex-col justify-between relative selection:bg-white/20">
 
-  <!-- Top progress bar -->
   <div class="fixed top-0 left-0 right-0 h-[2px] bg-white/10 z-50">
     <div id="progressBar" class="h-full bg-white w-0 transition-none"></div>
   </div>
 
-  <!-- HUD -->
   <header class="hud-layer hud-top w-full px-6 py-5 sm:px-10 sm:py-6 flex items-center justify-between z-30 text-sm">
     <div class="flex items-center gap-3">
       <button id="infoBtn" title="About & Shortcuts (?)" class="px-2.5 py-0.5 bg-surface text-white hover:bg-white hover:text-void transition-colors font-mono">
@@ -132,7 +125,7 @@
       </span>
     </div>
 
-    <!-- Keyboard notation (Desktop) -->
+   
     <div class="hidden md:flex items-center gap-5 text-sm text-white">
       <span><kbd class="px-1.5 py-0.5 bg-surface text-white font-mono">Space</kbd> Pause</span>
       <span><kbd class="px-1.5 py-0.5 bg-surface text-white font-mono">←/→</kbd> Nav</span>
@@ -141,7 +134,6 @@
     </div>
   </header>
 
-  <!-- Help overlay -->
   <div id="infoModal" class="hidden fixed inset-0 bg-void/90 z-50 flex items-center justify-center p-6">
     <div class="bg-surface text-white w-full max-w-md p-6 sm:p-8 flex flex-col gap-5 text-sm">
       <div class="flex items-center justify-between">
@@ -174,11 +166,9 @@
     </div>
   </div>
 
-  <!-- main flashcard -->
   <main class="flex-1 flex items-center justify-center px-6 sm:px-12 md:px-20 py-4 z-10">
     <div id="cardStage" class="card-stage w-full max-w-4xl flex flex-col items-center text-center">
       
-      <!-- tag and counter -->
       <div class="flex items-center gap-4 mb-6 sm:mb-8 text-sm">
         <span id="cardLevel" class="px-2.5 py-0.5 font-semibold tracking-wider uppercase bg-surface text-white">
           N1
@@ -188,26 +178,21 @@
         </span>
       </div>
 
-      <!-- Furigana reading -->
       <div id="cardReading" class="font-jp text-lg sm:text-xl text-white font-normal tracking-widest mb-2 min-h-[1.5em]">
         ...
       </div>
 
-      <!-- main kanji -->
       <h1 id="cardWord" class="font-jp text-5xl sm:text-7xl md:text-8xl font-medium text-white tracking-wide leading-tight mb-6 break-keep">
         読み込み中
       </h1>
 
-      <!-- English meaning -->
       <p id="cardMeaning" class="blur-target text-base sm:text-lg font-normal text-white max-w-2xl leading-relaxed mb-6">
         Loading vocabulary deck...
       </p>
 
-      <!-- Kanji breakdown -->
       <div id="kanjiBreakdown" class="hidden flex flex-wrap items-center justify-center gap-3 mb-8 px-3 max-w-3xl text-sm text-white">
       </div>
 
-      <!-- Example sentence -->
       <div id="sentenceContainer" class="max-w-3xl flex flex-col items-center gap-2.5 pt-2">
         <p id="sentenceJp" class="font-jp text-lg sm:text-xl text-white font-normal leading-relaxed tracking-wide">
           ...
@@ -220,11 +205,9 @@
     </div>
   </main>
 
-  <!-- Bottom bar -->
   <footer class="hud-layer hud-bottom w-full px-4 py-5 sm:px-8 sm:py-6 flex justify-center z-30">
     <div class="flex flex-wrap items-center justify-center gap-3 px-4 py-2 bg-surface max-w-full text-sm text-white">
       
-      <!-- level selection -->
       <div class="flex items-center gap-1 pr-2" role="group" aria-label="JLPT Levels">
         <button data-level="N1" class="level-btn px-2.5 py-1.5 text-sm font-medium transition-colors bg-white text-void">N1</button>
         <button data-level="N2" class="level-btn px-2.5 py-1.5 text-sm font-normal transition-colors text-white hover:bg-white/15">N2</button>
@@ -233,7 +216,6 @@
         <button data-level="N5" class="level-btn px-2.5 py-1.5 text-sm font-normal transition-colors text-white hover:bg-white/15">N5</button>
       </div>
 
-      <!-- Playback controls -->
       <div class="flex items-center gap-1 pr-2">
         <button id="prevBtn" title="Previous Word (Left Arrow)" class="p-2 text-white hover:bg-white/15 transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -242,12 +224,10 @@
         </button>
 
         <button id="playPauseBtn" title="Play / Pause (Space)" class="p-2 bg-white/15 text-white hover:bg-white/25 transition-colors">
-          <!-- Pause Icon -->
           <svg id="pauseIcon" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
             <rect x="6" y="5" width="4" height="14" />
             <rect x="14" y="5" width="4" height="14" />
           </svg>
-          <!-- Play Icon -->
           <svg id="playIcon" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
           </svg>
@@ -260,7 +240,6 @@
         </button>
       </div>
 
-      <!-- Timer -->
       <div class="flex items-center gap-1 pr-2" role="group" aria-label="Slide Duration">
         <button data-sec="5" class="dur-btn px-2 py-1.5 text-sm text-white hover:bg-white/15 transition-colors">5s</button>
         <button data-sec="8" class="dur-btn px-2 py-1.5 text-sm text-white hover:bg-white/15 transition-colors">8s</button>
@@ -269,7 +248,6 @@
         <button data-sec="20" class="dur-btn px-2 py-1.5 text-sm text-white hover:bg-white/15 transition-colors">20s</button>
       </div>
 
-      <!-- Extra buttons -->
       <div class="flex items-center gap-1">
         <button id="toggleReadingBtn" title="Toggle Furigana Reading (R)" class="px-2.5 py-1.5 text-sm font-jp text-white bg-white/15 hover:bg-white/25 transition-colors">
           かな
@@ -279,7 +257,6 @@
           漢字
         </button>
 
-        <!-- Furigana size -->
         <div class="flex items-center gap-0.5 px-1" role="group" aria-label="Furigana Size" title="Sentence Furigana Size">
           <span class="text-sm text-white pr-1 select-none">ふり</span>
           <button data-rtsize="0.48em" class="rt-btn px-1.5 py-1 text-sm text-white hover:bg-white/15 transition-colors">S</button>
@@ -304,7 +281,6 @@
     </div>
   </footer>
 
-  <!-- Toast Notification (Replaces alert()) -->
   <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 bg-surface text-sm text-white opacity-0 pointer-events-none transition-opacity duration-300 z-50">
     Notification
   </div>
@@ -312,7 +288,7 @@
   <script>
 
     const BUILTIN_VOCAB = [
-      // --- N1 ---
+      // N1 
       {
         level: 'N1',
         word: '一概に',
@@ -434,7 +410,7 @@
         sentenceEn: 'It may sound like self-praise, but this latest project has been very well received.'
       },
 
-      // --- N2 ---
+      // N2
       {
         level: 'N2',
         word: '把握する',
@@ -484,7 +460,7 @@
         sentenceEn: 'Studying abroad became the catalyst for me to think seriously about my future.'
       },
 
-      // --- N3 ---
+      // N3
       {
         level: 'N3',
         word: '傾向',
@@ -510,7 +486,7 @@
         sentenceEn: 'I cleverly arranged the furniture so I could live comfortably even in a small room.'
       },
 
-      // --- N4 ---
+      // N4
       {
         level: 'N4',
         word: '習慣',
@@ -528,7 +504,7 @@
         sentenceEn: 'My experience working abroad is a treasure of my life.'
       },
 
-      // --- N5 ---
+      // N5
       {
         level: 'N5',
         word: '静か',
@@ -547,7 +523,6 @@
       }
     ];
 
-    /* 2. APPLICATION STATE */
     const state = {
       activeLevels: new Set(['N1']),
       durationSec: 10,
@@ -557,7 +532,7 @@
       blurMeaning: false,
       rtSize: '0.62em',
 
-      // Data stores
+      // Storing da kanji
       vocabByLevel: {
         N1: [],
         N2: [],
@@ -565,12 +540,12 @@
         N4: [],
         N5: [],
       },
-      kanjiCache: new Map(), // To cache kanji readings & meanings
+      kanjiCache: new Map(),
       fetchedLevels: new Set(),
       history: [],       // Array of vocab objects visited
       historyIndex: -1,  // Current index in history
 
-      // Timer & Animation tracking
+      // tracking the timer
       elapsedMs: 0,
       lastFrameTime: null,
       rafId: null,
@@ -578,7 +553,6 @@
       isTransitioning: false,
     };
 
-    /* 3. DOM References */
     const el = {
       progressBar: document.getElementById('progressBar'),
       infoBtn: document.getElementById('infoBtn'),
@@ -611,9 +585,8 @@
       toast: document.getElementById('toast'),
     };
 
-    /* 4. DATA FETCHING */
+  
 
-    // Seed built-in items immediately
     function seedBuiltInVocab() {
       BUILTIN_VOCAB.forEach((item) => {
         if (state.vocabByLevel[item.level]) {
@@ -622,22 +595,19 @@
       });
     }
 
-    /* Converting bracketed furigana like "一概[いちがい]に" into HTML <ruby> tags */
+    // Converting bracketed furigana like "一概[いちがい]に" into HTML <ruby> tags
     function formatFuriganaText(rawText) {
       if (!rawText) return '';
       if (rawText.includes('<ruby>')) return rawText;
-      // Convert Kanji[kana] pattern to <ruby>Kanji<rt>kana</rt></ruby>
       return rawText.replace(/([一-龯々ヶ]+)\[([^\]]+)\]/g, '<ruby>$1<rt>$2</rt></ruby>');
     }
 
-    /* Normalizing different external JSON shapes into a unified internal card structure */
     function normalizeEntry(raw, fallbackLevel) {
       if (!raw || typeof raw !== 'object') return null;
 
       const word = raw.word || raw.expression || raw.kanji || raw.vocab || raw.term || '';
       const reading = raw.reading || raw.kana || raw.furigana || raw.hiragana || '';
 
-      // Meaning can be string or array of strings
       let meaning = '';
       if (Array.isArray(raw.meanings)) {
         meaning = raw.meanings.slice(0, 3).join('; ');
@@ -649,7 +619,6 @@
 
       if (!word && !reading) return null;
 
-      // Extract example sentence if present in various formats
       let sentenceJp = '';
       let sentenceEn = '';
 
@@ -679,9 +648,7 @@
       };
     }
 
-    /**
-     * Attempts to load external JLPT JSON datasets from public CDNs with graceful fallback
-     */
+
     async function loadExternalLevelData(level) {
       if (state.fetchedLevels.has(level)) return;
       state.fetchedLevels.add(level);
@@ -689,7 +656,6 @@
       const lower = level.toLowerCase();
       const num = level.replace('N', '');
 
-      // Candidate public open-source endpoints
       const endpoints = [
         `https://cdn.jsdelivr.net/gh/evanclan/OpenJLPT@main/data/${lower}.json`,
         `https://jlpt-vocab-api.vercel.app/api/words/all?level=${num}`,
@@ -730,7 +696,6 @@
             }
           }
         } catch (err) {
-          // Silently try next mirror or retain built-in offline dataset
         }
       }
 
@@ -745,16 +710,14 @@
       el.sourceBadge.textContent = `${totalLoaded.toLocaleString()} cards active`;
     }
 
-    /* 4B. Individual kanji lookup (readings + meaning) */
 
-    // Extract unique CJK ideographs from a word string
+    // Writing what each kanji means by themselves
     function extractUniqueKanji(text) {
       if (!text) return [];
       const matches = text.match(/[\u4E00-\u9FAF\u3400-\u4DBF]/g);
       return matches ? [...new Set(matches)] : [];
     }
 
-    // Fetch single kanji readings & meaning from kanjiapi.dev and cache locally
     async function fetchKanjiInfo(char) {
       if (state.kanjiCache.has(char)) {
         return state.kanjiCache.get(char);
@@ -765,7 +728,6 @@
         if (!res.ok) throw new Error('Kanji lookup failed');
         const data = await res.json();
 
-        // Clean okurigana dots (e.g., "ひと.つ" -> "ひと") and deduplicate readings
         const cleanReadings = (arr) =>
           [...new Set((arr || []).map((r) => r.split('.')[0].replace(/-/g, '')))].filter(Boolean);
 
@@ -788,7 +750,6 @@
       }
     }
 
-    // Render the compact kanji breakdown strip for the current word
     async function renderKanjiBreakdown(word) {
       const kanjiChars = extractUniqueKanji(word);
 
@@ -798,10 +759,8 @@
         return;
       }
 
-      // Fetch all characters in parallel
       const results = await Promise.all(kanjiChars.map((ch) => fetchKanjiInfo(ch)));
 
-      // Guard against race conditions if the slide already changed while fetching
       const activeCard = state.history[state.historyIndex];
       if (!activeCard || activeCard.word !== word || !state.showKanjiBreakdown) return;
 
@@ -826,7 +785,7 @@
       el.kanjiBreakdown.classList.remove('hidden');
     }
 
-    /* 5. slideshow rendering & logic */
+    // the actual slideshow
 
     function getActivePool() {
       let pool = [];
@@ -846,7 +805,7 @@
       let candidate = null;
       let attempts = 0;
 
-      // Avoid repeating the exact same card back-to-back
+      // No two words shall repeat back-to-back
       do {
         const randIdx = Math.floor(Math.random() * pool.length);
         candidate = pool[randIdx];
@@ -864,7 +823,6 @@
         el.cardCounter.textContent = `#${state.historyIndex + 1}`;
         el.cardWord.textContent = card.word;
 
-        // Reading visibility
         if (card.reading && card.reading !== card.word) {
           el.cardReading.textContent = card.reading;
           el.cardReading.style.visibility = state.showReading ? 'visible' : 'hidden';
@@ -874,10 +832,9 @@
 
         el.cardMeaning.textContent = card.meaning;
 
-        // Individual kanji breakdown strip
         renderKanjiBreakdown(card.word);
 
-        // Sentence handling (some external dictionary entries may lack example sentences)
+        // If external dictionary entries lack example sentences
         if (card.sentenceJp) {
           el.sentenceContainer.classList.remove('hidden');
           el.sentenceJp.innerHTML = card.sentenceJp;
@@ -932,7 +889,7 @@
       }
     }
 
-    /* animation frame and countdown timer */
+    // anim timer and frame
 
     function resetTimerProgress() {
       state.elapsedMs = 0;
@@ -962,7 +919,7 @@
       state.rafId = requestAnimationFrame(animationLoop);
     }
 
-    /* keyboard shortcuts */
+    // keyboard shortcuts
 
     function togglePlayPause() {
       state.isPlaying = !state.isPlaying;
@@ -992,7 +949,6 @@
         loadExternalLevelData(level);
       }
 
-      // Update UI buttons
       el.levelBtns.forEach((btn) => {
         const lvl = btn.dataset.level;
         if (state.activeLevels.has(lvl)) {
@@ -1113,7 +1069,7 @@
       }, 1800);
     }
 
-    // Auto-hide HUD & cursor after 3.5s of mouse inactivity for pure ambient screensaver feel
+    // Auto-hide HUD
     function registerActivity() {
       document.body.classList.remove('idle-cursor');
       clearTimeout(state.idleTimeout);
@@ -1122,7 +1078,6 @@
       }, 3500);
     }
 
-    /* init & event listeners */
     function bindEvents() {
       el.levelBtns.forEach((btn) => {
         btn.addEventListener('click', () => toggleLevel(btn.dataset.level));
@@ -1197,7 +1152,7 @@
         }
       });
 
-      // Mouse & touch activity detection for HUD auto-hide
+      // Detect mouse movement
       ['mousemove', 'mousedown', 'touchstart', 'keydown'].forEach((evt) => {
         window.addEventListener(evt, registerActivity, { passive: true });
       });
@@ -1209,18 +1164,17 @@
       bindEvents();
       updateSourceBadge();
 
-      // Immediately display the first N1 card
+      // Immediately show the first N1 card
       const firstCard = pickNextWord();
       state.history.push(firstCard);
       state.historyIndex = 0;
       renderCard(firstCard, false);
 
-      // Start timer loop & auto-hide timer
       resetTimerProgress();
       state.rafId = requestAnimationFrame(animationLoop);
       registerActivity();
 
-      // Background-fetch full N1 dataset from CDN
+      // fetch N1 dataset from CDN in the background
       await loadExternalLevelData('N1');
     }
 
